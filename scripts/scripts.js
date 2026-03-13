@@ -154,6 +154,7 @@ function renderEffects(charIndex) {
         div.innerHTML = `
             <input type="number" value="${effect.duration}" onchange="updateEffectDuration(${charIndex}, ${effectIndex}, this.value)">
             <input type="text" value="${effect.description}" onchange="updateEffectDescription(${charIndex}, ${effectIndex}, this.value)">
+            <label><input type="checkbox" ${effect.infinite ? 'checked' : ''} onchange="updateEffectInfinite(${charIndex}, ${effectIndex}, this.checked)"> Infinite</label>
             <button class="delete-btn" onclick="deleteEffect(${charIndex}, ${effectIndex})">X</button>
         `;
         effectsDiv.appendChild(div);
@@ -190,7 +191,7 @@ function updateMaxMana(index, value) {
 }
 
 function addEffect(charIndex) {
-    characters[charIndex].effects.push({ duration: 1, description: 'New Effect' });
+    characters[charIndex].effects.push({ duration: 1, description: 'New Effect', infinite: false });
     renderEffects(charIndex);
 }
 
@@ -200,6 +201,10 @@ function updateEffectDuration(charIndex, effectIndex, value) {
 
 function updateEffectDescription(charIndex, effectIndex, value) {
     characters[charIndex].effects[effectIndex].description = value;
+}
+
+function updateEffectInfinite(charIndex, effectIndex, checked) {
+    characters[charIndex].effects[effectIndex].infinite = checked;
 }
 
 function deleteEffect(charIndex, effectIndex) {
@@ -230,7 +235,7 @@ function copyCharacter(index) {
         maxHp: original.maxHp,
         mana: original.mana,
         maxMana: original.maxMana,
-        effects: original.effects.map(e => ({ duration: e.duration, description: e.description }))
+        effects: original.effects.map(e => ({ duration: e.duration, description: e.description, infinite: e.infinite }))
     };
     characters.push(newChar);
     sortCharacters();
@@ -243,9 +248,11 @@ function endTurn() {
     // Reduce effects of current character
     const current = characters[activeIndex];
     current.effects.forEach(effect => {
-        effect.duration--;
+        if (!effect.infinite && effect.duration > 0) {
+            effect.duration--;
+        }
     });
-    current.effects = current.effects.filter(effect => effect.duration > 0);
+    current.effects = current.effects.filter(effect => effect.infinite || effect.duration > 0);
     renderEffects(activeIndex);
     // Move to next
     activeIndex = (activeIndex + 1) % characters.length;
