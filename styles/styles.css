@@ -70,6 +70,24 @@ h1 {
     flex: 1;
 }
 
+.header-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.copy-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 5px 10px;
+}
+
+.copy-btn:hover {
+    background-color: #45a049;
+}
+
 .character-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

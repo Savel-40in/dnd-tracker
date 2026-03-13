@@ -21,6 +21,12 @@ function showAddCharacterForm() {
             <option value="yellow">Yellow</option>
             <option value="purple">Purple</option>
             <option value="orange">Orange</option>
+            <option value="pink">Pink</option>
+            <option value="cyan">Cyan</option>
+            <option value="brown">Brown</option>
+            <option value="gray">Gray</option>
+            <option value="black">Black</option>
+            <option value="white">White</option>
         </select>
         <input type="number" step="0.1" id="char-hp" placeholder="Current HP" required>
         <input type="number" step="0.1" id="char-max-hp" placeholder="Max HP" required>
@@ -99,7 +105,10 @@ function renderCharacterPanel() {
             <div class="character-header">
                 <div class="color-indicator small" style="background-color: ${char.color};"></div>
                 <h3>${char.name}</h3>
-                <button class="delete-btn" onclick="deleteCharacter(${index})">Delete</button>
+                <div class="header-buttons">
+                    <button class="copy-btn" onclick="copyCharacter(${index})">Copy</button>
+                    <button class="delete-btn" onclick="deleteCharacter(${index})">Delete</button>
+                </div>
             </div>
             <div class="character-grid">
                 <div class="grid-item">
@@ -113,6 +122,12 @@ function renderCharacterPanel() {
                         <option value="yellow" ${char.color === 'yellow' ? 'selected' : ''}>Yellow</option>
                         <option value="purple" ${char.color === 'purple' ? 'selected' : ''}>Purple</option>
                         <option value="orange" ${char.color === 'orange' ? 'selected' : ''}>Orange</option>
+                        <option value="pink" ${char.color === 'pink' ? 'selected' : ''}>Pink</option>
+                        <option value="cyan" ${char.color === 'cyan' ? 'selected' : ''}>Cyan</option>
+                        <option value="brown" ${char.color === 'brown' ? 'selected' : ''}>Brown</option>
+                        <option value="gray" ${char.color === 'gray' ? 'selected' : ''}>Gray</option>
+                        <option value="black" ${char.color === 'black' ? 'selected' : ''}>Black</option>
+                        <option value="white" ${char.color === 'white' ? 'selected' : ''}>White</option>
                     </select></label>
                 </div>
                 <div class="grid-item">
@@ -199,6 +214,26 @@ function deleteCharacter(index) {
     }
     activeIndex = characters.findIndex(c => c.id === activeCharacterId);
     if (activeIndex < 0) activeIndex = 0;
+    renderInitiativeBar();
+    renderCharacterPanel();
+}
+
+function copyCharacter(index) {
+    const original = characters[index];
+    const newId = nextCharacterId++;
+    const newChar = {
+        id: newId,
+        name: original.name,
+        initiative: original.initiative,
+        color: original.color,
+        hp: original.hp,
+        maxHp: original.maxHp,
+        mana: original.mana,
+        maxMana: original.maxMana,
+        effects: original.effects.map(e => ({ duration: e.duration, description: e.description }))
+    };
+    characters.push(newChar);
+    sortCharacters();
     renderInitiativeBar();
     renderCharacterPanel();
 }
