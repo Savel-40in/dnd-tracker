@@ -1,5 +1,7 @@
 let characters = [];
 let activeIndex = 0;
+let activeCharacterId = null;
+let nextCharacterId = 1;
 
 document.getElementById('add-character').addEventListener('click', showAddCharacterForm);
 document.getElementById('end-turn').addEventListener('click', endTurn);
@@ -20,10 +22,10 @@ function showAddCharacterForm() {
             <option value="purple">Purple</option>
             <option value="orange">Orange</option>
         </select>
-        <input type="number" id="char-hp" placeholder="Current HP" required>
-        <input type="number" id="char-max-hp" placeholder="Max HP" required>
-        <input type="number" id="char-mana" placeholder="Current Mana">
-        <input type="number" id="char-max-mana" placeholder="Max Mana">
+        <input type="number" step="0.1" id="char-hp" placeholder="Current HP" required>
+        <input type="number" step="0.1" id="char-max-hp" placeholder="Max HP" required>
+        <input type="number" step="0.1" id="char-mana" placeholder="Current Mana">
+        <input type="number" step="0.1" id="char-max-mana" placeholder="Max Mana">
         <button id="save-char">Save Character</button>
     `;
     panel.appendChild(form);
@@ -31,12 +33,14 @@ function showAddCharacterForm() {
         const name = document.getElementById('char-name').value;
         const initiative = parseInt(document.getElementById('char-initiative').value);
         const color = document.getElementById('char-color').value;
-        const hp = parseInt(document.getElementById('char-hp').value);
-        const maxHp = parseInt(document.getElementById('char-max-hp').value);
-        const mana = parseInt(document.getElementById('char-mana').value) || 0;
-        const maxMana = parseInt(document.getElementById('char-max-mana').value) || 0;
+        const hp = parseFloat(document.getElementById('char-hp').value);
+        const maxHp = parseFloat(document.getElementById('char-max-hp').value);
+        const mana = parseFloat(document.getElementById('char-mana').value) || 0;
+        const maxMana = parseFloat(document.getElementById('char-max-mana').value) || 0;
         if (name && !isNaN(initiative) && !isNaN(hp) && !isNaN(maxHp)) {
+            const id = nextCharacterId++;
             characters.push({
+                id,
                 name,
                 initiative,
                 color,
@@ -46,6 +50,7 @@ function showAddCharacterForm() {
                 maxMana,
                 effects: []
             });
+            if (activeCharacterId === null) activeCharacterId = id;
             sortCharacters();
             renderInitiativeBar();
             renderCharacterPanel();
@@ -56,7 +61,9 @@ function showAddCharacterForm() {
 
 function sortCharacters() {
     characters.sort((a, b) => b.initiative - a.initiative);
-    activeIndex = 0; // reset to first
+    const activeIndexAfterSort = characters.findIndex(c => c.id === activeCharacterId);
+    activeIndex = activeIndexAfterSort >= 0 ? activeIndexAfterSort : 0;
+    activeCharacterId = characters[activeIndex]?.id ?? null;
 }
 
 function renderInitiativeBar() {
@@ -64,7 +71,14 @@ function renderInitiativeBar() {
     bar.innerHTML = '<h2>Initiative Bar</h2>';
     characters.forEach((char, index) => {
         const div = document.createElement('div');
-        div.className = 'character-initiative' + (index === activeIndex ? ' active' : '');
+        div.className = 'character-initiative' + (char.id === activeCharacterId ? ' active' : '');
+        div.style.cursor = 'pointer';
+        div.addEventListener('click', () => {
+            activeCharacterId = char.id;
+            activeIndex = characters.findIndex(c => c.id === char.id);
+            renderInitiativeBar();
+            scrollToCharacter(char.id);
+        });
         div.innerHTML = `
             <div class="color-indicator" style="background-color: ${char.color};"></div>
             ${char.name} (${char.initiative})
@@ -80,19 +94,34 @@ function renderCharacterPanel() {
     characters.forEach((char, index) => {
         const div = document.createElement('div');
         div.className = 'character-form';
+        div.id = `character-${char.id}`;
         div.innerHTML = `
-            <h3>${char.name} <button class="delete-btn" onclick="deleteCharacter(${index})">Delete</button></h3>
-            <label>Initiative: <input type="number" value="${char.initiative}" onchange="updateInitiative(${index}, this.value)"></label>
-            <label>Color: <select onchange="updateColor(${index}, this.value)">
-                <option value="red" ${char.color === 'red' ? 'selected' : ''}>Red</option>
-                <option value="blue" ${char.color === 'blue' ? 'selected' : ''}>Blue</option>
-                <option value="green" ${char.color === 'green' ? 'selected' : ''}>Green</option>
-                <option value="yellow" ${char.color === 'yellow' ? 'selected' : ''}>Yellow</option>
-                <option value="purple" ${char.color === 'purple' ? 'selected' : ''}>Purple</option>
-                <option value="orange" ${char.color === 'orange' ? 'selected' : ''}>Orange</option>
-            </select></label>
-            <label>HP: <input type="number" value="${char.hp}" onchange="updateHp(${index}, this.value)"> / <input type="number" value="${char.maxHp}" onchange="updateMaxHp(${index}, this.value)"></label>
-            <label>Mana: <input type="number" value="${char.mana}" onchange="updateMana(${index}, this.value)"> / <input type="number" value="${char.maxMana}" onchange="updateMaxMana(${index}, this.value)"></label>
+            <div class="character-header">
+                <div class="color-indicator small" style="background-color: ${char.color};"></div>
+                <h3>${char.name}</h3>
+                <button class="delete-btn" onclick="deleteCharacter(${index})">Delete</button>
+            </div>
+            <div class="character-grid">
+                <div class="grid-item">
+                    <label>Initiative:<br><input type="number" value="${char.initiative}" onchange="updateInitiative(${index}, this.value)"></label>
+                </div>
+                <div class="grid-item">
+                    <label>Color:<br><select onchange="updateColor(${index}, this.value)">
+                        <option value="red" ${char.color === 'red' ? 'selected' : ''}>Red</option>
+                        <option value="blue" ${char.color === 'blue' ? 'selected' : ''}>Blue</option>
+                        <option value="green" ${char.color === 'green' ? 'selected' : ''}>Green</option>
+                        <option value="yellow" ${char.color === 'yellow' ? 'selected' : ''}>Yellow</option>
+                        <option value="purple" ${char.color === 'purple' ? 'selected' : ''}>Purple</option>
+                        <option value="orange" ${char.color === 'orange' ? 'selected' : ''}>Orange</option>
+                    </select></label>
+                </div>
+                <div class="grid-item">
+                    <label>HP:<br><input type="number" step="0.1" value="${char.hp}" onchange="updateHp(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxHp}" onchange="updateMaxHp(${index}, this.value)"></label>
+                </div>
+                <div class="grid-item">
+                    <label>Mana:<br><input type="number" step="0.1" value="${char.mana}" onchange="updateMana(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxMana}" onchange="updateMaxMana(${index}, this.value)"></label>
+                </div>
+            </div>
             <button onclick="addEffect(${index})">Add Effect</button>
             <div id="effects-${index}"></div>
         `;
@@ -126,22 +155,23 @@ function updateInitiative(index, value) {
 function updateColor(index, value) {
     characters[index].color = value;
     renderInitiativeBar();
+    renderCharacterPanel();
 }
 
 function updateHp(index, value) {
-    characters[index].hp = parseInt(value);
+    characters[index].hp = parseFloat(value);
 }
 
 function updateMaxHp(index, value) {
-    characters[index].maxHp = parseInt(value);
+    characters[index].maxHp = parseFloat(value);
 }
 
 function updateMana(index, value) {
-    characters[index].mana = parseInt(value);
+    characters[index].mana = parseFloat(value);
 }
 
 function updateMaxMana(index, value) {
-    characters[index].maxMana = parseInt(value);
+    characters[index].maxMana = parseFloat(value);
 }
 
 function addEffect(charIndex) {
@@ -163,8 +193,12 @@ function deleteEffect(charIndex, effectIndex) {
 }
 
 function deleteCharacter(index) {
-    characters.splice(index, 1);
-    if (activeIndex >= characters.length) activeIndex = 0;
+    const removed = characters.splice(index, 1)[0];
+    if (removed && removed.id === activeCharacterId) {
+        activeCharacterId = characters[0]?.id ?? null;
+    }
+    activeIndex = characters.findIndex(c => c.id === activeCharacterId);
+    if (activeIndex < 0) activeIndex = 0;
     renderInitiativeBar();
     renderCharacterPanel();
 }
@@ -172,12 +206,22 @@ function deleteCharacter(index) {
 function endTurn() {
     if (characters.length === 0) return;
     // Reduce effects of current character
-    characters[activeIndex].effects.forEach(effect => {
+    const current = characters[activeIndex];
+    current.effects.forEach(effect => {
         effect.duration--;
     });
-    characters[activeIndex].effects = characters[activeIndex].effects.filter(effect => effect.duration > 0);
+    current.effects = current.effects.filter(effect => effect.duration > 0);
     renderEffects(activeIndex);
     // Move to next
     activeIndex = (activeIndex + 1) % characters.length;
+    activeCharacterId = characters[activeIndex]?.id ?? null;
     renderInitiativeBar();
+}
+
+function scrollToCharacter(id) {
+    const element = document.getElementById(`character-${id}`);
+    if (!element) return;
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    element.classList.add('highlight');
+    setTimeout(() => element.classList.remove('highlight'), 800);
 }
