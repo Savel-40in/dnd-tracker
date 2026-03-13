@@ -77,9 +77,17 @@ h1 {
     margin: 8px 0;
 }
 
+.grid-item {
+    display: flex;
+    align-items: center;
+}
+
 .grid-item label {
-    display: block;
+    display: flex;
+    align-items: center;
     font-size: 0.9em;
+    width: 100%;
+    gap: 6px;
 }
 
 .color-indicator.small {

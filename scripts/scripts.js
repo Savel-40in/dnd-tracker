@@ -103,10 +103,10 @@ function renderCharacterPanel() {
             </div>
             <div class="character-grid">
                 <div class="grid-item">
-                    <label>Initiative:<br><input type="number" value="${char.initiative}" onchange="updateInitiative(${index}, this.value)"></label>
+                    <label>Initiative: <input type="number" value="${char.initiative}" onchange="updateInitiative(${index}, this.value)"></label>
                 </div>
                 <div class="grid-item">
-                    <label>Color:<br><select onchange="updateColor(${index}, this.value)">
+                    <label>Color: <select onchange="updateColor(${index}, this.value)">
                         <option value="red" ${char.color === 'red' ? 'selected' : ''}>Red</option>
                         <option value="blue" ${char.color === 'blue' ? 'selected' : ''}>Blue</option>
                         <option value="green" ${char.color === 'green' ? 'selected' : ''}>Green</option>
@@ -116,10 +116,10 @@ function renderCharacterPanel() {
                     </select></label>
                 </div>
                 <div class="grid-item">
-                    <label>HP:<br><input type="number" step="0.1" value="${char.hp}" onchange="updateHp(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxHp}" onchange="updateMaxHp(${index}, this.value)"></label>
+                    <label>HP: <input type="number" step="0.1" value="${char.hp}" onchange="updateHp(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxHp}" onchange="updateMaxHp(${index}, this.value)"></label>
                 </div>
                 <div class="grid-item">
-                    <label>Mana:<br><input type="number" step="0.1" value="${char.mana}" onchange="updateMana(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxMana}" onchange="updateMaxMana(${index}, this.value)"></label>
+                    <label>Mana: <input type="number" step="0.1" value="${char.mana}" onchange="updateMana(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxMana}" onchange="updateMaxMana(${index}, this.value)"></label>
                 </div>
             </div>
             <button onclick="addEffect(${index})">Add Effect</button>
