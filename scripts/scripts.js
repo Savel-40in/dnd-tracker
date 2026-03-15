@@ -18,18 +18,22 @@ function showAddCharacterForm() {
         <input type="text" id="char-name" placeholder="Character Name" required>
         <input type="number" id="char-initiative" placeholder="Initiative" required>
         <select id="char-color">
-            <option value="red">Red</option>
-            <option value="blue">Blue</option>
-            <option value="green">Green</option>
-            <option value="yellow">Yellow</option>
-            <option value="purple">Purple</option>
-            <option value="orange">Orange</option>
-            <option value="pink">Pink</option>
-            <option value="cyan">Cyan</option>
-            <option value="brown">Brown</option>
-            <option value="gray">Gray</option>
             <option value="black">Black</option>
             <option value="white">White</option>
+            <option value="grey">Grey</option>
+            <option value="silver">Silver</option>
+            <option value="red">Red</option>
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="yellow">Yellow</option>
+            <option value="aqua">Aqua</option>
+            <option value="fuchsia">Fuchsia</option>
+            <option value="lime">Lime</option>
+            <option value="maroon">Maroon</option>
+            <option value="navy">Navy</option>
+            <option value="olive">Olive</option>
+            <option value="purple">Purple</option>
+            <option value="teal">Teal</option>
         </select>
         <input type="number" step="0.1" id="char-hp" placeholder="Current HP" required>
         <input type="number" step="0.1" id="char-max-hp" placeholder="Max HP" required>
@@ -142,18 +146,22 @@ function renderCharacterPanel() {
                     </div>
                     <div class="grid-item">
                         <label>Color: <select onchange="updateColor(${index}, this.value)">
-                            <option value="red" ${char.color === 'red' ? 'selected' : ''}>Red</option>
-                            <option value="blue" ${char.color === 'blue' ? 'selected' : ''}>Blue</option>
-                            <option value="green" ${char.color === 'green' ? 'selected' : ''}>Green</option>
-                            <option value="yellow" ${char.color === 'yellow' ? 'selected' : ''}>Yellow</option>
-                            <option value="purple" ${char.color === 'purple' ? 'selected' : ''}>Purple</option>
-                            <option value="orange" ${char.color === 'orange' ? 'selected' : ''}>Orange</option>
-                            <option value="pink" ${char.color === 'pink' ? 'selected' : ''}>Pink</option>
-                            <option value="cyan" ${char.color === 'cyan' ? 'selected' : ''}>Cyan</option>
-                            <option value="brown" ${char.color === 'brown' ? 'selected' : ''}>Brown</option>
-                            <option value="gray" ${char.color === 'gray' ? 'selected' : ''}>Gray</option>
                             <option value="black" ${char.color === 'black' ? 'selected' : ''}>Black</option>
                             <option value="white" ${char.color === 'white' ? 'selected' : ''}>White</option>
+                            <option value="grey" ${char.color === 'grey' || char.color === 'gray' ? 'selected' : ''}>Grey</option>
+                            <option value="silver" ${char.color === 'silver' ? 'selected' : ''}>Silver</option>
+                            <option value="red" ${char.color === 'red' ? 'selected' : ''}>Red</option>
+                            <option value="green" ${char.color === 'green' ? 'selected' : ''}>Green</option>
+                            <option value="blue" ${char.color === 'blue' ? 'selected' : ''}>Blue</option>
+                            <option value="yellow" ${char.color === 'yellow' ? 'selected' : ''}>Yellow</option>
+                            <option value="aqua" ${char.color === 'aqua' ? 'selected' : ''}>Aqua</option>
+                            <option value="fuchsia" ${char.color === 'fuchsia' ? 'selected' : ''}>Fuchsia</option>
+                            <option value="lime" ${char.color === 'lime' ? 'selected' : ''}>Lime</option>
+                            <option value="maroon" ${char.color === 'maroon' ? 'selected' : ''}>Maroon</option>
+                            <option value="navy" ${char.color === 'navy' ? 'selected' : ''}>Navy</option>
+                            <option value="olive" ${char.color === 'olive' ? 'selected' : ''}>Olive</option>
+                            <option value="purple" ${char.color === 'purple' ? 'selected' : ''}>Purple</option>
+                            <option value="teal" ${char.color === 'teal' ? 'selected' : ''}>Teal</option>
                         </select></label>
                     </div>
                     <div class="grid-item">
@@ -279,9 +287,31 @@ function deleteCharacter(index) {
 function copyCharacter(index) {
     const original = characters[index];
     const newId = nextCharacterId++;
+    // Determine the new name with sequential numbering
+    const originalName = original.name;
+    const match = originalName.match(/^(.+?)( \d+)?$/);
+    const baseName = match[1];
+    // Find all existing names that start with baseName
+    const existingNumbers = characters
+        .map(char => {
+            if (char.name === baseName) return 1;
+            if (char.name.startsWith(baseName + ' ')) {
+                const numMatch = char.name.match(new RegExp(`^${baseName} (\\d+)$`));
+                return numMatch ? parseInt(numMatch[1]) : null;
+            }
+            return null;
+        })
+        .filter(num => num !== null);
+    const maxNum = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
+    const newNum = maxNum + 1;
+    const newName = baseName + ' ' + newNum;
+    // If the original doesn't have a number, rename it to baseName 1
+    if (original.name === baseName) {
+        original.name = baseName + ' 1';
+    }
     const newChar = {
         id: newId,
-        name: original.name,
+        name: newName,
         initiative: original.initiative,
         color: original.color,
         hp: original.hp,
