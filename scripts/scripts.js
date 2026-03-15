@@ -1,10 +1,13 @@
 let characters = [];
 let activeIndex = 0;
 let activeCharacterId = null;
+let openCharacterId = null;
 let nextCharacterId = 1;
+let battleStarted = false;
 
-document.getElementById('add-character').addEventListener('click', showAddCharacterForm);
-document.getElementById('end-turn').addEventListener('click', endTurn);
+// Initial render
+renderCharacterPanel();
+renderInitiativeBar();
 
 function showAddCharacterForm() {
     const panel = document.getElementById('character-panel');
@@ -34,7 +37,12 @@ function showAddCharacterForm() {
         <input type="number" step="0.1" id="char-max-mana" placeholder="Max Mana">
         <button id="save-char">Save Character</button>
     `;
-    panel.appendChild(form);
+    const firstChar = panel.querySelector('.character-form');
+    if (firstChar) {
+        panel.insertBefore(form, firstChar);
+    } else {
+        panel.appendChild(form);
+    }
     document.getElementById('save-char').addEventListener('click', () => {
         const name = document.getElementById('char-name').value;
         const initiative = parseInt(document.getElementById('char-initiative').value);
@@ -56,7 +64,6 @@ function showAddCharacterForm() {
                 maxMana,
                 effects: []
             });
-            if (activeCharacterId === null) activeCharacterId = id;
             sortCharacters();
             renderInitiativeBar();
             renderCharacterPanel();
@@ -67,9 +74,17 @@ function showAddCharacterForm() {
 
 function sortCharacters() {
     characters.sort((a, b) => b.initiative - a.initiative);
-    const activeIndexAfterSort = characters.findIndex(c => c.id === activeCharacterId);
-    activeIndex = activeIndexAfterSort >= 0 ? activeIndexAfterSort : 0;
-    activeCharacterId = characters[activeIndex]?.id ?? null;
+    if (battleStarted) {
+        const activeIndexAfterSort = characters.findIndex(c => c.id === activeCharacterId);
+        activeIndex = activeIndexAfterSort >= 0 ? activeIndexAfterSort : 0;
+        activeCharacterId = characters[activeIndex]?.id ?? null;
+        if (openCharacterId === activeCharacterId) {
+            openCharacterId = null;
+        }
+    } else {
+        activeIndex = 0;
+        activeCharacterId = null;
+    }
 }
 
 function renderInitiativeBar() {
@@ -80,9 +95,11 @@ function renderInitiativeBar() {
         div.className = 'character-initiative' + (char.id === activeCharacterId ? ' active' : '');
         div.style.cursor = 'pointer';
         div.addEventListener('click', () => {
-            activeCharacterId = char.id;
-            activeIndex = characters.findIndex(c => c.id === char.id);
-            renderInitiativeBar();
+            // Allow the active character to remain open; clicking others opens them as the secondary panel.
+            if (!battleStarted || char.id !== activeCharacterId) {
+                openCharacterId = char.id;
+            }
+            renderCharacterPanel();
             scrollToCharacter(char.id);
         });
         div.innerHTML = `
@@ -91,6 +108,12 @@ function renderInitiativeBar() {
         `;
         bar.appendChild(div);
     });
+    // Add the turn button at the end
+    const turnButton = document.createElement('button');
+    turnButton.id = 'end-turn';
+    turnButton.textContent = battleStarted ? 'End Turn' : 'Start Battle';
+    turnButton.addEventListener('click', handleTurnButton);
+    bar.appendChild(turnButton);
 }
 
 function renderCharacterPanel() {
@@ -98,51 +121,69 @@ function renderCharacterPanel() {
     panel.innerHTML = '<h2>Character Control Panel</h2><button id="add-character">Add Character</button>';
     document.getElementById('add-character').addEventListener('click', showAddCharacterForm);
     characters.forEach((char, index) => {
+        const isOpen = (battleStarted && char.id === activeCharacterId) || (char.id === openCharacterId);
+
         const div = document.createElement('div');
         div.className = 'character-form';
         div.id = `character-${char.id}`;
         div.innerHTML = `
             <div class="character-header">
                 <div class="color-indicator small" style="background-color: ${char.color};"></div>
-                <h3>${char.name}</h3>
+                <h3 onclick="toggleCharacterTab(${char.id})">${char.name}</h3>
                 <div class="header-buttons">
                     <button class="copy-btn" onclick="copyCharacter(${index})">Copy</button>
                     <button class="delete-btn" onclick="deleteCharacter(${index})">Delete</button>
                 </div>
             </div>
-            <div class="character-grid">
-                <div class="grid-item">
-                    <label>Initiative: <input type="number" value="${char.initiative}" onchange="updateInitiative(${index}, this.value)"></label>
+            <div class="character-details ${isOpen ? 'open' : ''}">
+                <div class="character-grid">
+                    <div class="grid-item">
+                        <label>Initiative: <input type="number" value="${char.initiative}" onchange="updateInitiative(${index}, this.value)"></label>
+                    </div>
+                    <div class="grid-item">
+                        <label>Color: <select onchange="updateColor(${index}, this.value)">
+                            <option value="red" ${char.color === 'red' ? 'selected' : ''}>Red</option>
+                            <option value="blue" ${char.color === 'blue' ? 'selected' : ''}>Blue</option>
+                            <option value="green" ${char.color === 'green' ? 'selected' : ''}>Green</option>
+                            <option value="yellow" ${char.color === 'yellow' ? 'selected' : ''}>Yellow</option>
+                            <option value="purple" ${char.color === 'purple' ? 'selected' : ''}>Purple</option>
+                            <option value="orange" ${char.color === 'orange' ? 'selected' : ''}>Orange</option>
+                            <option value="pink" ${char.color === 'pink' ? 'selected' : ''}>Pink</option>
+                            <option value="cyan" ${char.color === 'cyan' ? 'selected' : ''}>Cyan</option>
+                            <option value="brown" ${char.color === 'brown' ? 'selected' : ''}>Brown</option>
+                            <option value="gray" ${char.color === 'gray' ? 'selected' : ''}>Gray</option>
+                            <option value="black" ${char.color === 'black' ? 'selected' : ''}>Black</option>
+                            <option value="white" ${char.color === 'white' ? 'selected' : ''}>White</option>
+                        </select></label>
+                    </div>
+                    <div class="grid-item">
+                        <label>HP: <input type="number" step="0.1" value="${char.hp}" onchange="updateHp(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxHp}" onchange="updateMaxHp(${index}, this.value)"></label>
+                    </div>
+                    <div class="grid-item">
+                        <label>Mana: <input type="number" step="0.1" value="${char.mana}" onchange="updateMana(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxMana}" onchange="updateMaxMana(${index}, this.value)"></label>
+                    </div>
                 </div>
-                <div class="grid-item">
-                    <label>Color: <select onchange="updateColor(${index}, this.value)">
-                        <option value="red" ${char.color === 'red' ? 'selected' : ''}>Red</option>
-                        <option value="blue" ${char.color === 'blue' ? 'selected' : ''}>Blue</option>
-                        <option value="green" ${char.color === 'green' ? 'selected' : ''}>Green</option>
-                        <option value="yellow" ${char.color === 'yellow' ? 'selected' : ''}>Yellow</option>
-                        <option value="purple" ${char.color === 'purple' ? 'selected' : ''}>Purple</option>
-                        <option value="orange" ${char.color === 'orange' ? 'selected' : ''}>Orange</option>
-                        <option value="pink" ${char.color === 'pink' ? 'selected' : ''}>Pink</option>
-                        <option value="cyan" ${char.color === 'cyan' ? 'selected' : ''}>Cyan</option>
-                        <option value="brown" ${char.color === 'brown' ? 'selected' : ''}>Brown</option>
-                        <option value="gray" ${char.color === 'gray' ? 'selected' : ''}>Gray</option>
-                        <option value="black" ${char.color === 'black' ? 'selected' : ''}>Black</option>
-                        <option value="white" ${char.color === 'white' ? 'selected' : ''}>White</option>
-                    </select></label>
-                </div>
-                <div class="grid-item">
-                    <label>HP: <input type="number" step="0.1" value="${char.hp}" onchange="updateHp(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxHp}" onchange="updateMaxHp(${index}, this.value)"></label>
-                </div>
-                <div class="grid-item">
-                    <label>Mana: <input type="number" step="0.1" value="${char.mana}" onchange="updateMana(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxMana}" onchange="updateMaxMana(${index}, this.value)"></label>
-                </div>
+                <button onclick="addEffect(${index})">Add Effect</button>
+                <div id="effects-${index}"></div>
             </div>
-            <button onclick="addEffect(${index})">Add Effect</button>
-            <div id="effects-${index}"></div>
         `;
         panel.appendChild(div);
         renderEffects(index);
     });
+}
+
+function toggleCharacterTab(id) {
+    // During battle, the active character's panel must stay open.
+    if (battleStarted && id === activeCharacterId) {
+        return;
+    }
+
+    if (openCharacterId === id) {
+        openCharacterId = null;
+    } else {
+        openCharacterId = id;
+    }
+    renderCharacterPanel();
 }
 
 function renderEffects(charIndex) {
@@ -164,6 +205,8 @@ function renderEffects(charIndex) {
 function updateInitiative(index, value) {
     characters[index].initiative = parseInt(value);
     sortCharacters();
+    // When a character's initiative (movement in order) changes, close any open panels.
+    openCharacterId = null;
     renderInitiativeBar();
     renderCharacterPanel();
 }
@@ -215,7 +258,17 @@ function deleteEffect(charIndex, effectIndex) {
 function deleteCharacter(index) {
     const removed = characters.splice(index, 1)[0];
     if (removed && removed.id === activeCharacterId) {
-        activeCharacterId = characters[0]?.id ?? null;
+        if (battleStarted) {
+            activeCharacterId = characters[0]?.id ?? null;
+        } else {
+            activeCharacterId = null;
+        }
+        if (openCharacterId === activeCharacterId) {
+            openCharacterId = null;
+        }
+    }
+    if (removed && removed.id === openCharacterId) {
+        openCharacterId = null;
     }
     activeIndex = characters.findIndex(c => c.id === activeCharacterId);
     if (activeIndex < 0) activeIndex = 0;
@@ -243,6 +296,19 @@ function copyCharacter(index) {
     renderCharacterPanel();
 }
 
+function handleTurnButton() {
+    if (!battleStarted) {
+        battleStarted = true;
+        activeIndex = 0;
+        activeCharacterId = characters[0]?.id ?? null;
+        openCharacterId = null;
+        renderInitiativeBar();
+        renderCharacterPanel();
+    } else {
+        endTurn();
+    }
+}
+
 function endTurn() {
     if (characters.length === 0) return;
     // Reduce effects of current character
@@ -257,7 +323,10 @@ function endTurn() {
     // Move to next
     activeIndex = (activeIndex + 1) % characters.length;
     activeCharacterId = characters[activeIndex]?.id ?? null;
+    // When turn changes, reset secondary open panel so only the active character stays open.
+    openCharacterId = null;
     renderInitiativeBar();
+    renderCharacterPanel();
 }
 
 function scrollToCharacter(id) {
