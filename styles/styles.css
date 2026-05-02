@@ -110,7 +110,8 @@ h1 {
 
 .grid-item {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
 .grid-item label {
@@ -167,16 +168,86 @@ button:hover {
     border-radius: 3px;
     display: flex;
     align-items: center;
+    gap: 5px;
 }
 
 .effect input {
-    margin: 0 5px;
+    margin: 0;
     flex: 1;
 }
 
-#end-turn {
-    display: block;
-    margin: 20px auto;
-    padding: 10px 20px;
+.adjustment {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+    font-size: 0.8em;
+}
+
+.sign-btn {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #999;
+    background: white;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    transition: all 0.2s ease;
+}
+
+.sign-btn.active {
+    background: #4CAF50;
+    color: white;
+    border-color: #45a049;
+}
+
+.infinite-btn {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #999;
+    background: #fafafa;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    transition: all 0.2s ease;
+}
+
+.infinite-btn.active {
+    background: #4CAF50;
+    color: white;
+    border-color: #45a049;
+}
+
+.infinite-btn:hover {
+    background: #f0f0f0;
+}
+
+
+.adjustment input[type="number"] {
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.adjustment button {
+    width: auto;
+    padding: 5px 8px;
+    font-size: 0.9em;
+}
+
+.adjustment button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.adjustment button:disabled:hover {
+    background-color: #ccc;
 }

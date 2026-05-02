@@ -35,10 +35,8 @@ function showAddCharacterForm() {
             <option value="purple">Purple</option>
             <option value="teal">Teal</option>
         </select>
-        <input type="number" step="0.1" id="char-hp" placeholder="Current HP" required>
-        <input type="number" step="0.1" id="char-max-hp" placeholder="Max HP" required>
-        <input type="number" step="0.1" id="char-mana" placeholder="Current Mana">
-        <input type="number" step="0.1" id="char-max-mana" placeholder="Max Mana">
+        <input type="number" step="0.1" id="char-max-hp" placeholder="HP" required>
+        <input type="number" step="0.1" id="char-max-mana" placeholder="Mana">
         <button id="save-char">Save Character</button>
     `;
     const firstChar = panel.querySelector('.character-form');
@@ -51,20 +49,18 @@ function showAddCharacterForm() {
         const name = document.getElementById('char-name').value;
         const initiative = parseInt(document.getElementById('char-initiative').value);
         const color = document.getElementById('char-color').value;
-        const hp = parseFloat(document.getElementById('char-hp').value);
         const maxHp = parseFloat(document.getElementById('char-max-hp').value);
-        const mana = parseFloat(document.getElementById('char-mana').value) || 0;
         const maxMana = parseFloat(document.getElementById('char-max-mana').value) || 0;
-        if (name && !isNaN(initiative) && !isNaN(hp) && !isNaN(maxHp)) {
+        if (name && !isNaN(initiative) && !isNaN(maxHp)) {
             const id = nextCharacterId++;
             characters.push({
                 id,
                 name,
                 initiative,
                 color,
-                hp,
+                hp: maxHp,
                 maxHp,
-                mana,
+                mana: maxMana,
                 maxMana,
                 effects: []
             });
@@ -142,7 +138,7 @@ function renderCharacterPanel() {
             <div class="character-details ${isOpen ? 'open' : ''}">
                 <div class="character-grid">
                     <div class="grid-item">
-                        <label>Initiative: <input type="number" value="${char.initiative}" onchange="updateInitiative(${index}, this.value)"></label>
+                        <label>Initiative: <input type="number" value="${char.initiative}" data-field="initiative" data-index="${index}" onchange="updateInitiative(${index}, this.value)" ondblclick="selectAllText(this)" onkeydown="handleEnter(event, this)" onblur="commitNumericField(this)"></label>
                     </div>
                     <div class="grid-item">
                         <label>Color: <select onchange="updateColor(${index}, this.value)">
@@ -165,10 +161,22 @@ function renderCharacterPanel() {
                         </select></label>
                     </div>
                     <div class="grid-item">
-                        <label>HP: <input type="number" step="0.1" value="${char.hp}" onchange="updateHp(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxHp}" onchange="updateMaxHp(${index}, this.value)"></label>
+                        <label>HP: <input type="number" step="0.1" value="${char.hp}" data-field="hp" data-index="${index}" onchange="updateHp(${index}, this.value)" ondblclick="selectAllText(this)" onkeydown="handleEnter(event, this)" onblur="commitNumericField(this)"> / <span>${char.maxHp}</span></label>
+                        <div class="adjustment">
+                            <button type="button" class="sign-btn" id="hp-plus-btn-${index}" onclick="selectSign('hp', ${index}, '+')" title="Increase">+</button>
+                            <button type="button" class="sign-btn active" id="hp-minus-btn-${index}" onclick="selectSign('hp', ${index}, '-')" title="Decrease">-</button>
+                            <input type="number" step="0.1" id="hp-adjust-value-${index}" placeholder="value of the change" oninput="validateAdjustButton('hp', ${index})" ondblclick="selectAllText(this)" onkeydown="handleEnter(event)">
+                            <button id="hp-apply-btn-${index}" onclick="adjustHp(${index})" disabled>Apply</button>
+                        </div>
                     </div>
                     <div class="grid-item">
-                        <label>Mana: <input type="number" step="0.1" value="${char.mana}" onchange="updateMana(${index}, this.value)"> / <input type="number" step="0.1" value="${char.maxMana}" onchange="updateMaxMana(${index}, this.value)"></label>
+                        <label>Mana: <input type="number" step="0.1" value="${char.mana}" data-field="mana" data-index="${index}" onchange="updateMana(${index}, this.value)" ondblclick="selectAllText(this)" onkeydown="handleEnter(event, this)" onblur="commitNumericField(this)"> / <span>${char.maxMana}</span></label>
+                        <div class="adjustment">
+                            <button type="button" class="sign-btn" id="mana-plus-btn-${index}" onclick="selectSign('mana', ${index}, '+')" title="Increase">+</button>
+                            <button type="button" class="sign-btn active" id="mana-minus-btn-${index}" onclick="selectSign('mana', ${index}, '-')" title="Decrease">-</button>
+                            <input type="number" step="0.1" id="mana-adjust-value-${index}" placeholder="value of the change" oninput="validateAdjustButton('mana', ${index})" ondblclick="selectAllText(this)" onkeydown="handleEnter(event)">
+                            <button id="mana-apply-btn-${index}" onclick="adjustMana(${index})" disabled>Apply</button>
+                        </div>
                     </div>
                 </div>
                 <button onclick="addEffect(${index})">Add Effect</button>
@@ -198,25 +206,77 @@ function renderEffects(charIndex) {
     const effectsDiv = document.getElementById(`effects-${charIndex}`);
     effectsDiv.innerHTML = '';
     characters[charIndex].effects.forEach((effect, effectIndex) => {
+        const durationPlaceholder = effect.infinite ? 'infinite' : 'duration';
         const div = document.createElement('div');
         div.className = 'effect';
         div.innerHTML = `
-            <input type="number" value="${effect.duration}" onchange="updateEffectDuration(${charIndex}, ${effectIndex}, this.value)">
-            <input type="text" value="${effect.description}" onchange="updateEffectDescription(${charIndex}, ${effectIndex}, this.value)">
-            <label><input type="checkbox" ${effect.infinite ? 'checked' : ''} onchange="updateEffectInfinite(${charIndex}, ${effectIndex}, this.checked)"> Infinite</label>
+            <input type="number" value="${effect.duration}" data-field="effect-duration" data-char-index="${charIndex}" data-effect-index="${effectIndex}" placeholder="${durationPlaceholder}" onchange="updateEffectDuration(${charIndex}, ${effectIndex}, this.value)" ondblclick="selectAllText(this)" onkeydown="handleEnter(event, this)" onblur="commitNumericField(this)">
+            <input type="text" value="${effect.description}" placeholder="effect description" onchange="updateEffectDescription(${charIndex}, ${effectIndex}, this.value)" ondblclick="selectAllText(this)" onkeydown="handleEnter(event)">
+            <button type="button" class="infinite-btn ${effect.infinite ? 'active' : ''}" onclick="toggleInfinite(${charIndex}, ${effectIndex})" title="Infinite duration">\u221E</button>
             <button class="delete-btn" onclick="deleteEffect(${charIndex}, ${effectIndex})">X</button>
         `;
         effectsDiv.appendChild(div);
     });
 }
 
+function handleEnter(event, element) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        if (element) {
+            commitNumericField(element);
+        }
+        event.target.blur();
+    }
+}
+
+function commitNumericField(element) {
+    if (element.type !== 'number') return;
+    const field = element.dataset.field;
+    const index = Number(element.dataset.index);
+    const value = parseFloat(element.value);
+    if (field === 'initiative') {
+        const clamped = Number.isNaN(value) ? 0 : Math.max(0, Math.trunc(value));
+        updateInitiative(index, clamped);
+        element.value = clamped;
+        return;
+    }
+    if (field === 'hp' || field === 'mana') {
+        const maxField = field === 'hp' ? 'maxHp' : 'maxMana';
+        const max = characters[index][maxField];
+        const clamped = Number.isNaN(value) ? 0 : Math.max(0, Math.min(value, max));
+        if (field === 'hp') {
+            updateHp(index, clamped);
+        } else {
+            updateMana(index, clamped);
+        }
+        element.value = clamped;
+        return;
+    }
+    if (field === 'effect-duration') {
+        const charIndex = Number(element.dataset.charIndex);
+        const effectIndex = Number(element.dataset.effectIndex);
+        const clamped = Number.isNaN(value) ? '' : Math.max(0, value);
+        updateEffectDuration(charIndex, effectIndex, clamped);
+        element.value = clamped;
+    }
+}
+
+function selectAllText(element) {
+    if (typeof element.select === 'function') {
+        element.select();
+    }
+}
+
 function updateInitiative(index, value) {
-    characters[index].initiative = parseInt(value);
-    sortCharacters();
-    // When a character's initiative (movement in order) changes, close any open panels.
-    openCharacterId = null;
-    renderInitiativeBar();
-    renderCharacterPanel();
+    const parsed = parseInt(value);
+    if (!Number.isNaN(parsed)) {
+        characters[index].initiative = Math.max(0, parsed);
+        sortCharacters();
+        // When a character's initiative (movement in order) changes, close any open panels.
+        openCharacterId = null;
+        renderInitiativeBar();
+        renderCharacterPanel();
+    }
 }
 
 function updateColor(index, value) {
@@ -226,28 +286,104 @@ function updateColor(index, value) {
 }
 
 function updateHp(index, value) {
-    characters[index].hp = parseFloat(value);
-}
-
-function updateMaxHp(index, value) {
-    characters[index].maxHp = parseFloat(value);
+    const hp = parseFloat(value);
+    const maxHp = characters[index].maxHp;
+    if (!Number.isNaN(hp)) {
+        characters[index].hp = Math.max(0, Math.min(hp, maxHp));
+    }
 }
 
 function updateMana(index, value) {
-    characters[index].mana = parseFloat(value);
+    const mana = parseFloat(value);
+    const maxMana = characters[index].maxMana;
+    if (!Number.isNaN(mana)) {
+        characters[index].mana = Math.max(0, Math.min(mana, maxMana));
+    }
 }
 
-function updateMaxMana(index, value) {
-    characters[index].maxMana = parseFloat(value);
+function selectSign(type, index, sign) {
+    const plusBtn = document.getElementById(`${type}-plus-btn-${index}`);
+    const minusBtn = document.getElementById(`${type}-minus-btn-${index}`);
+    plusBtn.classList.remove('active');
+    minusBtn.classList.remove('active');
+    if (sign === '+') {
+        plusBtn.classList.add('active');
+    } else {
+        minusBtn.classList.add('active');
+    }
+}
+
+function validateAdjustButton(type, index) {
+    const input = document.getElementById(`${type}-adjust-value-${index}`);
+    const button = document.getElementById(`${type}-apply-btn-${index}`);
+    const value = parseFloat(input.value);
+    if (!isNaN(value) && value !== '') {
+        button.disabled = false;
+    } else {
+        button.disabled = true;
+    }
+}
+
+function adjustHp(index) {
+    const plusBtn = document.getElementById(`hp-plus-btn-${index}`);
+    const minusBtn = document.getElementById(`hp-minus-btn-${index}`);
+    let sign;
+    if (plusBtn.classList.contains('active')) {
+        sign = '+';
+    } else if (minusBtn.classList.contains('active')) {
+        sign = '-';
+    } else {
+        return;
+    }
+    const amount = parseFloat(document.getElementById(`hp-adjust-value-${index}`).value) || 0;
+    const maxHp = characters[index].maxHp;
+    if (sign === '+') {
+        characters[index].hp = Math.max(0, Math.min(characters[index].hp + amount, maxHp));
+    } else {
+        characters[index].hp = Math.max(0, Math.min(characters[index].hp - amount, maxHp));
+    }
+    // Update the input field
+    const input = document.querySelector(`#character-${characters[index].id} input[onchange*="updateHp"]`);
+    if (input) input.value = characters[index].hp;
+    // Clear the adjust value
+    document.getElementById(`hp-adjust-value-${index}`).value = '';
+    validateAdjustButton('hp', index);
+}
+
+function adjustMana(index) {
+    const plusBtn = document.getElementById(`mana-plus-btn-${index}`);
+    const minusBtn = document.getElementById(`mana-minus-btn-${index}`);
+    let sign;
+    if (plusBtn.classList.contains('active')) {
+        sign = '+';
+    } else if (minusBtn.classList.contains('active')) {
+        sign = '-';
+    } else {
+        return;
+    }
+    const amount = parseFloat(document.getElementById(`mana-adjust-value-${index}`).value) || 0;
+    const maxMana = characters[index].maxMana;
+    if (sign === '+') {
+        characters[index].mana = Math.max(0, Math.min(characters[index].mana + amount, maxMana));
+    } else {
+        characters[index].mana = Math.max(0, Math.min(characters[index].mana - amount, maxMana));
+    }
+    // Update the input field
+    const input = document.querySelector(`#character-${characters[index].id} input[onchange*="updateMana"]`);
+    if (input) input.value = characters[index].mana;
+    // Clear the adjust value
+    document.getElementById(`mana-adjust-value-${index}`).value = '';
+    validateAdjustButton('mana', index);
 }
 
 function addEffect(charIndex) {
-    characters[charIndex].effects.push({ duration: 1, description: 'New Effect', infinite: false });
+    characters[charIndex].effects.push({ duration: '', description: '', infinite: false });
     renderEffects(charIndex);
 }
 
 function updateEffectDuration(charIndex, effectIndex, value) {
-    characters[charIndex].effects[effectIndex].duration = parseInt(value);
+    const parsed = parseInt(value);
+    characters[charIndex].effects[effectIndex].duration = Number.isNaN(parsed) ? '' : Math.max(0, parsed);
 }
 
 function updateEffectDescription(charIndex, effectIndex, value) {
@@ -256,6 +392,12 @@ function updateEffectDescription(charIndex, effectIndex, value) {
 
 function updateEffectInfinite(charIndex, effectIndex, checked) {
     characters[charIndex].effects[effectIndex].infinite = checked;
+}
+
+function toggleInfinite(charIndex, effectIndex) {
+    const effect = characters[charIndex].effects[effectIndex];
+    effect.infinite = !effect.infinite;
+    renderEffects(charIndex);
 }
 
 function deleteEffect(charIndex, effectIndex) {
